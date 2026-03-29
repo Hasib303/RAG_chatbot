@@ -42,9 +42,7 @@ init_auth(settings)
 init_firestore(settings)
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
-) -> AuthenticatedUser:
+def get_current_user( credentials: HTTPAuthorizationCredentials | None = Depends(security), ) -> AuthenticatedUser:
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -72,10 +70,7 @@ def frontend_config() -> FrontendConfigResponse:
 
 
 @app.post("/api/conversations", response_model=ConversationSummary)
-def create_conversation(
-    request: CreateConversationRequest,
-    user: AuthenticatedUser = Depends(get_current_user),
-) -> ConversationSummary:
+def create_conversation( request: CreateConversationRequest, user: AuthenticatedUser = Depends(get_current_user), ) -> ConversationSummary:
     return create_conversation_flow(settings, user, request.title)
 
 
@@ -85,19 +80,12 @@ def list_conversations(user: AuthenticatedUser = Depends(get_current_user)) -> l
 
 
 @app.get("/api/conversations/{conversation_id}", response_model=ConversationDetail)
-def get_conversation(
-    conversation_id: str,
-    user: AuthenticatedUser = Depends(get_current_user),
-) -> ConversationDetail:
+def get_conversation( conversation_id: str, user: AuthenticatedUser = Depends(get_current_user), ) -> ConversationDetail:
     return get_conversation_detail_flow(settings, user, conversation_id)
 
 
 @app.post("/api/upload", response_model=UploadResponse)
-def upload_document(
-    conversation_id: str | None = Form(default=None),
-    file: UploadFile = File(...),
-    user: AuthenticatedUser = Depends(get_current_user),
-) -> UploadResponse:
+def upload_document( conversation_id: str | None = Form(default=None), file: UploadFile = File(...), user: AuthenticatedUser = Depends(get_current_user), ) -> UploadResponse:
     return upload_document_flow(
         settings,
         user=user,
@@ -107,10 +95,7 @@ def upload_document(
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(
-    request: ChatRequest,
-    user: AuthenticatedUser = Depends(get_current_user),
-) -> ChatResponse:
+def chat( request: ChatRequest, user: AuthenticatedUser = Depends(get_current_user), ) -> ChatResponse:
     return answer_conversation_flow(
         settings,
         user=user,
