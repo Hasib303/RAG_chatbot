@@ -86,6 +86,7 @@ uv run app/main.py
 
 The chat history is used only for conversational continuity. The uploaded document remains the only knowledge source.
 
+<!--
 ## Debugging Retrieval
 To inspect what the retriever found for a question, send `debug: true` to `/api/chat`.
 
@@ -115,3 +116,4 @@ This makes it easier to see whether the issue is:
 - V1 supports one document per conversation.
 - If you restart the server, conversations remain in Firestore and the backend can rebuild the local index from the stored document file if needed.
 - Uploaded files and vector indexes live on the local filesystem under `data/`.
+-->
