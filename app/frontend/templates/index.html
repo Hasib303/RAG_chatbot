@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Grounded Chatbot</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-frame">
+      <aside class="sidebar hidden" id="sidebar">
+        <div class="sidebar__header">
+          <div class="brand-lockup">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <div>
+              <p class="eyebrow eyebrow--sidebar">Workspace</p>
+              <h1 class="sidebar__title">Document Grounded Chat</h1>
+              <p class="sidebar__lede">
+                Ask questions from one uploaded document at a time and keep the conversation history saved.
+              </p>
+            </div>
+          </div>
+
+          <button id="logout-btn" class="secondary-button secondary-button--sidebar" type="button">
+            Sign Out
+          </button>
+        </div>
+
+        <section class="sidebar__summary">
+          <div class="sidebar__identity">
+            <span class="sidebar__identity-label">Signed in as</span>
+            <strong id="user-email">Signed out</strong>
+          </div>
+
+          <div class="sidebar__metric">
+            <span class="sidebar__metric-label">Saved Chats</span>
+            <strong id="conversation-count">00</strong>
+          </div>
+        </section>
+
+        <section class="sidebar__controls">
+          <button id="new-conversation-btn" class="primary-button full-width" type="button">
+            New Conversation
+          </button>
+
+          <form id="upload-form" class="stack sidebar__upload">
+            <label for="document-file">Attach PDF or DOCX</label>
+            <input id="document-file" name="file" type="file" accept=".pdf,.docx" required />
+            <button class="secondary-button secondary-button--sidebar full-width" type="submit">
+              Index Document
+            </button>
+          </form>
+
+          <p id="sidebar-status" class="status status--sidebar"></p>
+        </section>
+
+        <section class="sidebar__list-block">
+          <div class="sidebar__section-title">
+            <span>Conversations</span>
+          </div>
+          <ul id="conversation-list" class="conversation-list"></ul>
+        </section>
+      </aside>
+
+      <main class="main-panel">
+        <section id="auth-panel" class="auth-shell">
+          <div class="auth-card auth-card--centered">
+            <div class="auth-card__logo" aria-hidden="true">
+              <span class="auth-card__logo-core"></span>
+            </div>
+
+            <div class="auth-card__header auth-card__header--centered">
+              <p class="eyebrow">Google Sign-In</p>
+              <h2>Sign in to continue</h2>
+              <p class="muted">
+                Use Google to open your workspace. New users are created automatically on first sign-in.
+              </p>
+            </div>
+
+            <button id="google-auth-btn" class="google-button" type="button">
+              <span class="google-button__mark" aria-hidden="true">G</span>
+              <span>Continue with Google</span>
+            </button>
+
+            <p id="auth-status" class="status status--centered"></p>
+          </div>
+        </section>
+
+        <section id="chat-panel" class="chat-shell hidden">
+          <header class="chat-shell__header">
+            <div class="chat-shell__header-copy">
+              <p class="eyebrow">Conversation</p>
+              <h2 id="conversation-title">Choose a conversation</h2>
+              <p id="document-label" class="muted">Upload a document to start chatting.</p>
+            </div>
+
+            <div class="chat-shell__header-meta">
+              <span id="document-pill" class="status-pill">No document</span>
+            </div>
+          </header>
+
+          <div class="chat-shell__body">
+            <div id="message-list" class="message-list"></div>
+          </div>
+
+          <form id="chat-form" class="chat-composer">
+            <label class="sr-only" for="message-input">Message</label>
+            <textarea
+              id="message-input"
+              rows="4"
+              placeholder="Ask a question about the uploaded document..."
+              required
+            ></textarea>
+
+            <div class="chat-composer__footer">
+              <p class="muted">Responses should come only from retrieved document context.</p>
+              <button id="send-btn" class="primary-button" type="submit">Send</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/static/app.js"></script>
+  </body>
+</html>
