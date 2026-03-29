@@ -1,8 +1,5 @@
-from __future__ import annotations
-
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, TypeVar
 from uuid import uuid4
 
 import firebase_admin
@@ -10,15 +7,11 @@ from google.api_core.exceptions import PermissionDenied
 from fastapi import HTTPException, status
 from firebase_admin import credentials, firestore
 
-from app.config import Settings
-
-T = TypeVar("T")
-
-_DB: firestore.Client | None = None
-_DB_ERROR: str | None = None
+_DB = None
+_DB_ERROR = None
 
 
-def init_firestore(settings: Settings) -> None:
+def init_firestore(settings):
     global _DB, _DB_ERROR
 
     credentials_path = settings.firebase_credentials_path
@@ -44,8 +37,8 @@ def init_firestore(settings: Settings) -> None:
     _DB_ERROR = None
 
 
-def create_conversation(settings: Settings, user_id: str, title: str | None = None) -> dict[str, Any]:
-    def operation(db: firestore.Client) -> dict[str, Any]:
+def create_conversation(settings, user_id, title=None):
+    def operation(db):
         conversation_id = uuid4().hex
         now = datetime.now(UTC)
         payload = {
@@ -63,8 +56,8 @@ def create_conversation(settings: Settings, user_id: str, title: str | None = No
     return run_firestore(settings, operation)
 
 
-def list_conversations(settings: Settings, user_id: str) -> list[dict[str, Any]]:
-    def operation(db: firestore.Client) -> list[dict[str, Any]]:
+def list_conversations(settings, user_id):
+    def operation(db):
         snapshots = db.collection("conversations").where("user_id", "==", user_id).stream()
         conversations = [{"id": item.id, **item.to_dict()} for item in snapshots]
         conversations.sort(key=lambda item: item["updated_at"], reverse=True)
@@ -73,8 +66,8 @@ def list_conversations(settings: Settings, user_id: str) -> list[dict[str, Any]]
     return run_firestore(settings, operation)
 
 
-def get_conversation(settings: Settings, user_id: str, conversation_id: str) -> dict[str, Any]:
-    def operation(db: firestore.Client) -> dict[str, Any]:
+def get_conversation(settings, user_id, conversation_id):
+    def operation(db):
         snapshot = db.collection("conversations").document(conversation_id).get()
         if not snapshot.exists:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
@@ -87,8 +80,8 @@ def get_conversation(settings: Settings, user_id: str, conversation_id: str) -> 
     return run_firestore(settings, operation)
 
 
-def attach_document( settings: Settings, *, conversation_id: str, document_name: str, document_type: str, document_path: str, ) -> None:
-    def operation(db: firestore.Client) -> None:
+def attach_document(settings, *, conversation_id, document_name, document_type, document_path):
+    def operation(db):
         now = datetime.now(UTC)
         db.collection("conversations").document(conversation_id).update(
             {
@@ -103,8 +96,8 @@ def attach_document( settings: Settings, *, conversation_id: str, document_name:
     run_firestore(settings, operation)
 
 
-def add_message( settings: Settings, *, conversation_id: str, role: str, content: str, sources: list[dict[str, Any]] | None = None, ) -> dict[str, Any]:
-    def operation(db: firestore.Client) -> dict[str, Any]:
+def add_message(settings, *, conversation_id, role, content, sources=None):
+    def operation(db):
         message_id = uuid4().hex
         now = datetime.now(UTC)
         payload = {
@@ -121,8 +114,8 @@ def add_message( settings: Settings, *, conversation_id: str, role: str, content
     return run_firestore(settings, operation)
 
 
-def get_messages( settings: Settings, conversation_id: str, limit: int | None = None, ) -> list[dict[str, Any]]:
-    def operation(db: firestore.Client) -> list[dict[str, Any]]:
+def get_messages(settings, conversation_id, limit=None):
+    def operation(db):
         snapshots = db.collection("conversations").document(conversation_id).collection("messages").stream()
         messages = [{"id": item.id, **item.to_dict()} for item in snapshots]
         messages.sort(key=lambda item: item["created_at"])
@@ -133,7 +126,7 @@ def get_messages( settings: Settings, conversation_id: str, limit: int | None = 
     return run_firestore(settings, operation)
 
 
-def run_firestore(settings: Settings, operation: Callable[[firestore.Client], T]) -> T:
+def run_firestore(settings, operation):
     try:
         db = require_db(settings)
         return operation(db)
@@ -150,7 +143,7 @@ def run_firestore(settings: Settings, operation: Callable[[firestore.Client], T]
         ) from error
 
 
-def require_db(settings: Settings) -> firestore.Client:
+def require_db(settings):
     if _DB is None and _DB_ERROR is None:
         init_firestore(settings)
 
