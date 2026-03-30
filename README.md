@@ -82,6 +82,85 @@ You can also run:
 uv run uvicorn app.main:app --reload
 ```
 
+## Docker
+The Docker setup is split into:
+- one `app` container for FastAPI and the built-in frontend
+- one optional `ollama` container for local embeddings and chat generation
+- external Firebase Auth and Firestore
+
+Files:
+- [Dockerfile](/Users/hasib/Code/RAG_chatbot/Dockerfile): production-style app image built with `uv`
+- [compose.yaml](/Users/hasib/Code/RAG_chatbot/compose.yaml): local orchestration for `app` and optional `ollama`
+- [.dockerignore](/Users/hasib/Code/RAG_chatbot/.dockerignore): keeps secrets and local artifacts out of the image
+
+### Docker setup
+1. Copy `.env.example` to `.env`.
+2. Set your normal Firebase and Ollama values in `.env`.
+3. Set `FIREBASE_SERVICE_ACCOUNT_FILE` in `.env` to the host path of your Firebase service account JSON.
+4. For Docker Compose with the bundled Ollama service, keep:
+
+```env
+OLLAMA_BASE_URL_DOCKER=http://ollama:11434
+```
+
+5. For app-only Docker pointing at Ollama running on your machine, change:
+
+```env
+OLLAMA_BASE_URL_DOCKER=http://host.docker.internal:11434
+```
+
+The container does not use your host `FIREBASE_CREDENTIALS_PATH`. Compose mounts the JSON file into the container and overrides it with:
+
+```env
+FIREBASE_CREDENTIALS_PATH=/run/secrets/firebase-service-account.json
+```
+
+### Run with Docker Compose and bundled Ollama
+Start the full local stack:
+
+```bash
+docker compose --profile local-ollama up --build
+```
+
+On first run, pull the two Ollama models inside the running Ollama container:
+
+```bash
+docker compose exec ollama ollama pull llama3.2
+docker compose exec ollama ollama pull nomic-embed-text
+```
+
+Then open `http://127.0.0.1:8000`.
+
+### Run app container only
+If Ollama is already running outside Docker or on another host, set `OLLAMA_BASE_URL_DOCKER` in `.env` to that reachable URL and run:
+
+```bash
+docker compose up --build app
+```
+
+Examples:
+- local host Ollama from Docker Desktop: `http://host.docker.internal:11434`
+- remote Ollama server: `http://your-server:11434`
+
+### Docker data and logs
+- uploaded files live in the `app_uploads` volume
+- FAISS indexes live in the `app_indexes` volume
+- Ollama models live in the `ollama_data` volume
+
+Useful commands:
+
+```bash
+docker compose logs -f app
+docker compose logs -f ollama
+docker compose down
+```
+
+### Common Docker issues
+- If upload or chat fails immediately, check that `OLLAMA_BASE_URL_DOCKER` points to a reachable Ollama instance.
+- If the app reports Firebase is not configured, check `FIREBASE_SERVICE_ACCOUNT_FILE` and the mounted JSON path.
+- If chat fails with a missing model error, pull `llama3.2` and `nomic-embed-text` inside the Ollama container.
+- If you recreate containers, your files and indexes remain because they are stored in Docker volumes rather than inside the image.
+
 ## How Grounding Works
 1. The backend parses the uploaded document.
 2. The text is split into overlapping chunks.
