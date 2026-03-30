@@ -96,6 +96,16 @@ uv run uvicorn app.main:app --reload
 
 The chat history is used only for conversational continuity. The uploaded document remains the only knowledge source.
 
+## Prompt Protection
+- User questions and retrieved document passages are treated as untrusted text.
+- The backend blocks obvious attempts to override the document-only policy, reveal hidden instructions, or force outside-knowledge answers.
+- Retrieved chunks that look like assistant-targeting instructions are filtered out before they are sent to the model.
+- If the request is unsafe or the remaining safe context is not enough to support the answer, the app returns:
+
+`This information is not present in the provided document.`
+
+- Prompt protection is heuristic and server-side. It reduces prompt injection risk, but it is not a perfect security boundary.
+
 <!--
 ## Debugging Retrieval
 To inspect what the retriever found for a question, send `debug: true` to `/api/chat`.
@@ -114,6 +124,8 @@ The response will include:
 - `debug.used_fallback`
 - `debug.score_threshold`
 - `debug.top_score`
+- `debug.protection_trigger`
+- `debug.filtered_chunk_count`
 - `debug.matches`
 
 This makes it easier to see whether the issue is:
