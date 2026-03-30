@@ -40,7 +40,10 @@ def get_conversation_detail( settings: Settings, user: AuthenticatedUser, conver
     messages = firebase_store.get_messages(settings, conversation_id)
     return ConversationDetail(
         conversation=ConversationSummary.model_validate(conversation),
-        messages=[MessageResponse.model_validate(message) for message in messages],
+        messages=[
+            MessageResponse.model_validate({**message, "sources": []})
+            for message in messages
+        ],
     )
 
 
@@ -145,7 +148,7 @@ def answer_conversation( settings: Settings, *, user: AuthenticatedUser, convers
                 detail=f"Could not generate an answer with Ollama: {error}",
             ) from error
 
-    sources = serialise_sources(search_results[:3]) if answer != FALLBACK_ANSWER else []
+    sources = serialise_sources(search_results[:3]) if debug and answer != FALLBACK_ANSWER else []
     debug_info = build_debug_info(settings, search_results, used_fallback) if debug else None
 
     firebase_store.add_message(
@@ -159,7 +162,7 @@ def answer_conversation( settings: Settings, *, user: AuthenticatedUser, convers
         conversation_id=conversation_id,
         role="assistant",
         content=answer,
-        sources=[source.model_dump() for source in sources],
+        sources=[source.model_dump() for source in sources] if debug else [],
     )
 
     return ChatResponse(answer=answer, sources=sources, debug=debug_info)

@@ -10,6 +10,17 @@ from app.services.domain import SearchResult
 from app.services.grounding import FALLBACK_ANSWER
 
 _CLIENTS: dict[str, httpx.Client] = {}
+SYSTEM_PROMPT = (
+    "You are a helpful assistant answering questions about one uploaded document. "
+    "Answer naturally and directly in plain language. "
+    "Use only the supplied document excerpts as factual support. "
+    "Use the conversation history only to resolve follow-up references, not as evidence. "
+    "Do not mention retrieval, excerpts, context windows, similarity scores, or say "
+    "'according to the document' unless the user explicitly asks for sources. "
+    "Paraphrase instead of copying long passages. "
+    "Keep the answer concise by default, usually 2 to 4 sentences. "
+    f"If the excerpts do not support the answer, reply exactly with: {FALLBACK_ANSWER}"
+)
 
 
 @dataclass(slots=True)
@@ -49,12 +60,7 @@ def answer_question( settings: Settings, *, question: str, search_results: list[
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "You answer questions only from the supplied document excerpts. "
-                        "Use the conversation history only to understand follow-up questions. "
-                        "Never rely on outside knowledge. "
-                        f"If the excerpts do not contain the answer, reply exactly with: {FALLBACK_ANSWER}"
-                    ),
+                    "content": SYSTEM_PROMPT,
                 },
                 {
                     "role": "user",
@@ -74,17 +80,18 @@ def build_prompt( *, question: str, search_results: list[SearchResult], history:
         for turn in history
     ]
     excerpt_lines = [
-        f"[{result.chunk.source_label} | score={result.score:.3f}]\n{result.chunk.text}"
+        f"Source: {result.chunk.source_label}\n{result.chunk.text}"
         for result in search_results
     ]
 
     return "\n\n".join(
         [
-            "Conversation history:",
+            "Recent conversation:",
             "\n".join(history_lines) if history_lines else "(no prior messages)",
-            "Document excerpts:",
+            "Relevant document passages:",
             "\n\n".join(excerpt_lines),
-            f"Current question:\n{question}",
+            f"Question:\n{question}",
+            "Write a natural answer that sounds like a normal assistant response.",
         ]
     )
 
