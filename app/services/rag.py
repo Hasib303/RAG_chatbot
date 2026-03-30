@@ -25,11 +25,7 @@ from app.services.vector_store import index_exists, query_index, save_index
 from app.storage import firebase_store
 
 
-def create_conversation(
-    settings: Settings,
-    user: AuthenticatedUser,
-    title: str | None,
-) -> ConversationSummary:
+def create_conversation( settings: Settings, user: AuthenticatedUser, title: str | None, ) -> ConversationSummary:
     payload = firebase_store.create_conversation(settings, user.user_id, title)
     return ConversationSummary.model_validate(payload)
 
@@ -39,11 +35,7 @@ def list_conversations(settings: Settings, user: AuthenticatedUser) -> list[Conv
     return [ConversationSummary.model_validate(item) for item in items]
 
 
-def get_conversation_detail(
-    settings: Settings,
-    user: AuthenticatedUser,
-    conversation_id: str,
-) -> ConversationDetail:
+def get_conversation_detail( settings: Settings, user: AuthenticatedUser, conversation_id: str, ) -> ConversationDetail:
     conversation = firebase_store.get_conversation(settings, user.user_id, conversation_id)
     messages = firebase_store.get_messages(settings, conversation_id)
     return ConversationDetail(
@@ -52,13 +44,7 @@ def get_conversation_detail(
     )
 
 
-def upload_document(
-    settings: Settings,
-    *,
-    user: AuthenticatedUser,
-    uploaded_file: UploadFile,
-    conversation_id: str | None,
-) -> UploadResponse:
+def upload_document( settings: Settings, *, user: AuthenticatedUser, uploaded_file: UploadFile, conversation_id: str | None, ) -> UploadResponse:
     filename = Path(uploaded_file.filename or "").name
     if not filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing file name.")
@@ -110,14 +96,7 @@ def upload_document(
     )
 
 
-def answer_conversation(
-    settings: Settings,
-    *,
-    user: AuthenticatedUser,
-    conversation_id: str,
-    message: str,
-    debug: bool = False,
-) -> ChatResponse:
+def answer_conversation( settings: Settings, *, user: AuthenticatedUser, conversation_id: str, message: str, debug: bool = False, ) -> ChatResponse:
     conversation = firebase_store.get_conversation(settings, user.user_id, conversation_id)
     document_path = conversation.get("document_path")
     if not document_path:
@@ -216,11 +195,7 @@ def serialise_sources(results: list[SearchResult]) -> list[SourceSnippet]:
     ]
 
 
-def build_debug_info(
-    settings: Settings,
-    results: list[SearchResult],
-    used_fallback: bool,
-) -> ChatDebugInfo:
+def build_debug_info( settings: Settings, results: list[SearchResult], used_fallback: bool, ) -> ChatDebugInfo:
     return ChatDebugInfo(
         used_fallback=used_fallback,
         score_threshold=settings.retrieval_score_threshold,
