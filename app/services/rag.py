@@ -18,7 +18,12 @@ from app.models import (
 from app.services.auth import AuthenticatedUser
 from app.services.document_parser import parse_document
 from app.services.domain import SearchResult
-from app.services.grounding import FALLBACK_ANSWER, normalise_answer, should_use_fallback
+from app.services.grounding import (
+    FALLBACK_ANSWER,
+    normalise_answer,
+    question_is_supported,
+    should_use_fallback,
+)
 from app.services.ollama_client import ChatTurn, answer_question, embed_texts
 from app.services.text_chunker import chunk_sections
 from app.services.vector_store import index_exists, query_index, save_index
@@ -123,7 +128,10 @@ def answer_conversation( settings: Settings, *, user: AuthenticatedUser, convers
             detail=f"Could not retrieve document context: {error}",
         ) from error
 
-    used_fallback = should_use_fallback(search_results, settings.retrieval_score_threshold)
+    used_fallback = should_use_fallback(
+        search_results,
+        settings.retrieval_score_threshold,
+    ) or not question_is_supported(message, search_results)
     if used_fallback:
         answer = FALLBACK_ANSWER
     else:
