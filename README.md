@@ -19,7 +19,7 @@ It also stores conversations and messages in Firebase Firestore, so a user can r
 - `Firebase Authentication` for Google sign-in
 - `Cloud Firestore` for conversations and messages
 - `Ollama` for local embeddings and local answer generation
-- local NumPy-based vector store for readability
+- local `FAISS` index for retrieval
 
 ## Project Layout
 - `app/main.py`: API routes and app wiring
@@ -28,21 +28,22 @@ It also stores conversations and messages in Firebase Firestore, so a user can r
 - `app/services/document_parser.py`: PDF/DOCX text extraction
 - `app/services/text_chunker.py`: deterministic chunking
 - `app/services/ollama_client.py`: small Ollama request helpers
-- `app/services/vector_store.py`: local embedding storage and cosine similarity search
+- `app/services/vector_store.py`: FAISS index persistence and retrieval
 - `app/storage/firebase_store.py`: Firestore persistence
 - `app/frontend/`: minimal browser client
 
 ## Prerequisites
-1. Python `3.11` or `3.12` is recommended.
-2. Install and start `Ollama`.
-3. Pull the two local models:
+1. Install `uv`.
+2. Python `3.11` or newer.
+3. Install and start `Ollama`.
+4. Pull the two local models:
 
 ```bash
 ollama pull llama3.2
 ollama pull nomic-embed-text
 ```
 
-4. Create a Firebase project with:
+5. Create a Firebase project with:
    - Google sign-in enabled
    - Cloud Firestore enabled
    - one Web App created so you have the frontend config values
@@ -51,17 +52,26 @@ ollama pull nomic-embed-text
 
 ## Local Setup
 ```bash
+uv sync
+cp .env.example .env
+```
+
+`uv sync` installs the project dependencies from [pyproject.toml](/Users/hasib/Code/RAG_chatbot/pyproject.toml) and [uv.lock](/Users/hasib/Code/RAG_chatbot/uv.lock) into `.venv/`.
+
+Fill in `.env` with your Firebase values and the absolute path to the downloaded service account JSON file.
+
+Alternative setup with plain `pip`:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Fill in `.env` with your Firebase values and the absolute path to the downloaded service account JSON file.
-
 ## Run
 ```bash
-uvicorn app.main:app --reload
+uv run app/main.py
 ```
 
 Open `http://127.0.0.1:8000`.
@@ -69,14 +79,14 @@ Open `http://127.0.0.1:8000`.
 You can also run:
 
 ```bash
-uv run app/main.py
+uv run uvicorn app.main:app --reload
 ```
 
 ## How Grounding Works
 1. The backend parses the uploaded document.
 2. The text is split into overlapping chunks.
 3. Ollama creates embeddings for those chunks.
-4. The embeddings are stored under `data/indexes/`.
+4. The chunk metadata and FAISS index are stored under `data/indexes/`.
 5. Each chat request embeds the question, retrieves the closest chunks, and checks the top similarity score.
 6. If the similarity is too weak, the backend returns:
 
@@ -115,5 +125,5 @@ This makes it easier to see whether the issue is:
 ## Notes
 - V1 supports one document per conversation.
 - If you restart the server, conversations remain in Firestore and the backend can rebuild the local index from the stored document file if needed.
-- Uploaded files and vector indexes live on the local filesystem under `data/`.
+- Uploaded files and FAISS indexes live on the local filesystem under `data/`.
 -->
