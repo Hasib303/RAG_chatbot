@@ -17,6 +17,8 @@ class ChatDebugInfo(BaseModel):
     used_fallback: bool
     score_threshold: float
     top_score: float | None = None
+    protection_trigger: str | None = None
+    filtered_chunk_count: int = 0
     matches: list[SourceSnippet] = Field(default_factory=list)
 
 

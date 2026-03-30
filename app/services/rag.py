@@ -25,6 +25,11 @@ from app.services.grounding import (
     should_use_fallback,
 )
 from app.services.ollama_client import ChatTurn, answer_question, embed_texts
+from app.services.prompt_protection import (
+    detect_output_leakage,
+    detect_user_prompt_injection,
+    filter_unsafe_results,
+)
 from app.services.text_chunker import chunk_sections
 from app.services.vector_store import index_exists, query_index, save_index
 from app.storage import firebase_store
@@ -113,22 +118,31 @@ def answer_conversation( settings: Settings, *, user: AuthenticatedUser, convers
             detail="Upload a document before starting the chat.",
         )
 
+    protection_trigger = detect_user_prompt_injection(message)
+    filtered_chunk_count = 0
+
     try:
-        ensure_index(settings, conversation_id, Path(document_path))
-        query_embedding = embed_texts(settings, [message])[0]
-        search_results = query_index(
-            settings,
-            conversation_id,
-            query_embedding=query_embedding,
-            top_k=settings.retrieval_top_k,
-        )
+        if protection_trigger is None:
+            ensure_index(settings, conversation_id, Path(document_path))
+            query_embedding = embed_texts(settings, [message])[0]
+            search_results = query_index(
+                settings,
+                conversation_id,
+                query_embedding=query_embedding,
+                top_k=settings.retrieval_top_k,
+            )
+            search_results, filtered_chunk_count = filter_unsafe_results(search_results)
+            if filtered_chunk_count and not search_results:
+                protection_trigger = "document_prompt_injection"
+        else:
+            search_results = []
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Could not retrieve document context: {error}",
         ) from error
 
-    used_fallback = should_use_fallback(
+    used_fallback = protection_trigger is not None or should_use_fallback(
         search_results,
         settings.retrieval_score_threshold,
     ) or not question_is_supported(message, search_results)
@@ -150,6 +164,14 @@ def answer_conversation( settings: Settings, *, user: AuthenticatedUser, convers
                 history=history,
             )
             answer = normalise_answer(raw_answer)
+            if answer == FALLBACK_ANSWER:
+                used_fallback = True
+            else:
+                output_trigger = detect_output_leakage(answer)
+                if output_trigger:
+                    protection_trigger = output_trigger
+                    answer = FALLBACK_ANSWER
+                    used_fallback = True
         except Exception as error:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -157,7 +179,13 @@ def answer_conversation( settings: Settings, *, user: AuthenticatedUser, convers
             ) from error
 
     sources = serialise_sources(search_results[:3]) if debug and answer != FALLBACK_ANSWER else []
-    debug_info = build_debug_info(settings, search_results, used_fallback) if debug else None
+    debug_info = build_debug_info(
+        settings,
+        search_results,
+        used_fallback,
+        protection_trigger,
+        filtered_chunk_count,
+    ) if debug else None
 
     firebase_store.add_message(
         settings,
@@ -206,10 +234,18 @@ def serialise_sources(results: list[SearchResult]) -> list[SourceSnippet]:
     ]
 
 
-def build_debug_info( settings: Settings, results: list[SearchResult], used_fallback: bool, ) -> ChatDebugInfo:
+def build_debug_info(
+    settings: Settings,
+    results: list[SearchResult],
+    used_fallback: bool,
+    protection_trigger: str | None,
+    filtered_chunk_count: int,
+) -> ChatDebugInfo:
     return ChatDebugInfo(
         used_fallback=used_fallback,
         score_threshold=settings.retrieval_score_threshold,
         top_score=round(results[0].score, 3) if results else None,
+        protection_trigger=protection_trigger,
+        filtered_chunk_count=filtered_chunk_count,
         matches=serialise_sources(results[: settings.retrieval_top_k]),
     )
