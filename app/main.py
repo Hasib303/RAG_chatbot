@@ -32,12 +32,14 @@ from app.services.rag import (
     list_conversations as list_conversations_flow,
     upload_document as upload_document_flow,
 )
+from app.services.vector_store import remove_legacy_index_files
 from app.storage.firebase_store import init_firestore
 
 app = FastAPI(title=settings.app_name)
 app.mount("/static", StaticFiles(directory=str(settings.static_dir)), name="static")
 
 security = HTTPBearer(auto_error=False)
+remove_legacy_index_files(settings)
 init_auth(settings)
 init_firestore(settings)
 
