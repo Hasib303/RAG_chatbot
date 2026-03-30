@@ -1,10 +1,10 @@
 fastapi==0.115.12
-uvicorn[standard]==0.34.0
+uvicorn==0.34.0
 python-multipart==0.0.20
 python-dotenv==1.1.0
 httpx==0.28.1
 numpy==2.2.4
+faiss-cpu
 pypdf==5.4.0
 python-docx==1.1.2
 firebase-admin==6.7.0
-pytest==8.3.5
