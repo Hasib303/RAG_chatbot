@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.git
+.gitignore
+.playwright-cli
+.pytest_cache
+.python-version
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.json
+data/indexes
+data/uploads
+tests
