@@ -306,29 +306,6 @@ function appendMessage(message) {
 
   article.append(role, body);
 
-  if (message.sources && message.sources.length) {
-    const sources = document.createElement("div");
-    sources.className = "message__sources";
-
-    for (const source of message.sources) {
-      const entry = document.createElement("div");
-      entry.className = "message__source";
-
-      const label = document.createElement("span");
-      label.className = "message__source-label";
-      label.textContent = `${source.source_label} • score ${Number(source.score).toFixed(3)}`;
-
-      const text = document.createElement("span");
-      text.className = "message__source-text";
-      text.textContent = source.text;
-
-      entry.append(label, text);
-      sources.append(entry);
-    }
-
-    article.append(sources);
-  }
-
   elements.messageList.append(article);
   elements.messageList.scrollTop = elements.messageList.scrollHeight;
 }
