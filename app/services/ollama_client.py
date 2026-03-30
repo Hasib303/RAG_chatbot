@@ -39,13 +39,7 @@ def embed_texts(settings: Settings, texts: list[str]) -> np.ndarray:
     return np.array(embeddings, dtype=np.float32)
 
 
-def answer_question(
-    settings: Settings,
-    *,
-    question: str,
-    search_results: list[SearchResult],
-    history: list[ChatTurn],
-) -> str:
+def answer_question( settings: Settings, *, question: str, search_results: list[SearchResult], history: list[ChatTurn], ) -> str:
     response = get_client(settings).post(
         "/api/chat",
         json={
@@ -74,12 +68,7 @@ def answer_question(
     return payload.get("message", {}).get("content", "").strip()
 
 
-def build_prompt(
-    *,
-    question: str,
-    search_results: list[SearchResult],
-    history: list[ChatTurn],
-) -> str:
+def build_prompt( *, question: str, search_results: list[SearchResult], history: list[ChatTurn], ) -> str:
     history_lines = [
         f"{'User' if turn.role == 'user' else 'Assistant'}: {turn.content}"
         for turn in history

@@ -3,11 +3,7 @@ from __future__ import annotations
 from app.services.domain import DocumentChunk, TextSection
 
 
-def chunk_sections(
-    sections: list[TextSection],
-    chunk_size_chars: int,
-    chunk_overlap_chars: int,
-) -> list[DocumentChunk]:
+def chunk_sections( sections: list[TextSection], chunk_size_chars: int, chunk_overlap_chars: int, ) -> list[DocumentChunk]:
     if chunk_size_chars <= 0:
         raise ValueError("chunk_size_chars must be greater than zero.")
     if chunk_overlap_chars < 0:
